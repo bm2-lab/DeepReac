@@ -1,4 +1,4 @@
-# DeepReac+:  universal framework for quantitative modeling of chemical reaction based on deep active learning
+# DeepReac+:  An universal framework for quantitative modeling of chemical reaction based on deep active learning
 ## introduction
 DeepReac+ is an efficient and universal computational framework for the prediction of chemical reaction outcomes and selection of optimized reaction conditions. To accelerate the automation of chemical synthesis, artificial intelligence technologies have been introduced to predict potential reaction outcomes before experimentation. However, two limitations exist for current computational approaches: 
 - There is a lack of universality and generalization in the modeling of various sorts of chemical reactions. 
