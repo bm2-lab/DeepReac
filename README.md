@@ -80,6 +80,11 @@ for i in index_list:
     label = torch.tensor([y[i]*0.01])
     data_ = (str(i),reactions[i],names[i],label)
     data.append(data_)
+    
+print(data[0])
+***
+
+***
 ```
 
 ### Prediction of chemical reaction outcomes
