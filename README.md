@@ -103,6 +103,7 @@ For illustration purpose, we take the Dataset A [1] as example to show how to tr
 
 ```
 import random
+from tqdm import tqdm
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -142,8 +143,67 @@ model = DeepReac(in_feats_dim, len(data[0][1]), c_num, device = device)
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 stopper = EarlyStopping(mode='lower', patience=args.patience)
 model.to(device)
+***
+DeepReac(
+  (gnn): GAT_adj(
+    (gnn_layers): ModuleList(
+      (0): GATLayer(
+        (gat_conv): GATConv(
+          (fc): Linear(in_features=74, out_features=128, bias=False)
+          (feat_drop): Dropout(p=0.0, inplace=False)
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (leaky_relu): LeakyReLU(negative_slope=0.2)
+          (res_fc): Linear(in_features=74, out_features=128, bias=False)
+        )
+      )
+      (1): GATLayer(
+        (gat_conv): GATConv(
+          (fc): Linear(in_features=128, out_features=128, bias=False)
+          (feat_drop): Dropout(p=0.0, inplace=False)
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (leaky_relu): LeakyReLU(negative_slope=0.2)
+          (res_fc): Linear(in_features=128, out_features=128, bias=False)
+        )
+      )
+    )
+  )
+  (readout): WeightedSumAndMax(
+    (weight_and_sum): WeightAndSum(
+      (atom_weighting): Sequential(
+        (0): Linear(in_features=32, out_features=1, bias=True)
+        (1): Sigmoid()
+      )
+    )
+  )
+  (gnn_layers): ModuleList(
+    (0): GATLayer(
+      (gat_conv): GATConv(
+        (fc): Linear(in_features=64, out_features=128, bias=False)
+        (feat_drop): Dropout(p=0, inplace=False)
+        (attn_drop): Dropout(p=0, inplace=False)
+        (leaky_relu): LeakyReLU(negative_slope=0.2)
+        (res_fc): Linear(in_features=64, out_features=128, bias=False)
+      )
+    )
+    (1): GATLayer(
+      (gat_conv): GATConv(
+        (fc): Linear(in_features=128, out_features=128, bias=False)
+        (feat_drop): Dropout(p=0, inplace=False)
+        (attn_drop): Dropout(p=0, inplace=False)
+        (leaky_relu): LeakyReLU(negative_slope=0.2)
+        (res_fc): Linear(in_features=128, out_features=128, bias=False)
+      )
+    )
+  )
+  (digits): CapsuleLayer()
+  (predict): Sequential(
+    (0): Dropout(p=0, inplace=False)
+    (1): Linear(in_features=64, out_features=1, bias=True)
+  )
+)
+***
 
-for epoch in range(args.num_epochs):
+for epoch in tqdm(range(args.num_epochs)):
     out_feat_train, index_train, label_train = run_a_train_epoch(epoch, model, train_loader, loss_fn, optimizer, args, device)
     val_score, out_feat_val, index_val, label_val, predict_val= run_an_eval_epoch(model, val_loader, args, device)
     early_stop = stopper.step(val_score[0], model)
@@ -151,6 +211,13 @@ for epoch in range(args.num_epochs):
         break
 unlabel_score, out_feat_un, index_un, label_un, predict_un= run_an_eval_epoch(model, unlabel_loader, args, device)
 label_ratio = len(labeled)/len(data)
+
+print("Size of labelled dataset:",100*label_ratio,"%")
+print("Model performance on unlabelled dataset: RMSE:",unlabel_score[0],";MAE:",unlabel_score[1],";R^2:",unlabel_score[2])
+***
+Size of labelled dataset: 9.987357774968395 %
+Model performance on unlabelled dataset: RMSE: 0.14693266619199769 ;MAE: 0.1064871996641159 ;R^2: 0.6654608167422571
+***
 ```
 
 3. Select 10 candidates according to adversary-based strategy
@@ -171,8 +238,29 @@ sample_.sort(reverse=True)
 for i in sample_:
     sample_list.append(unlabeled.pop(i))
 labeled += sample_list
+train_set, val_set = split_dataset(labeled, frac_list=train_val_split, shuffle=True, random_state=0)
+train_loader = DataLoader(dataset=train_set, batch_size=args.batch_size, shuffle=True, collate_fn=collate_molgraphs)
+val_loader = DataLoader(dataset=val_set, batch_size=args.batch_size, shuffle=True, collate_fn=collate_molgraphs)
+unlabel_loader = DataLoader(dataset=unlabeled, batch_size=args.batch_size, shuffle=True, collate_fn=collate_molgraphs)
 ```
 5. Retrain the DeepReac model until model performance meets your requirement
+```
+for epoch in tqdm(range(args.num_epochs)):
+    out_feat_train, index_train, label_train = run_a_train_epoch(epoch, model, train_loader, loss_fn, optimizer, args, device)
+    val_score, out_feat_val, index_val, label_val, predict_val= run_an_eval_epoch(model, val_loader, args, device)
+    early_stop = stopper.step(val_score[0], model)
+    if early_stop:
+        break
+unlabel_score, out_feat_un, index_un, label_un, predict_un= run_an_eval_epoch(model, unlabel_loader, args, device)
+label_ratio = len(labeled)/len(data)
+
+print("Size of labelled dataset:",100*label_ratio,"%")
+print("Model performance on unlabelled dataset: RMSE:",unlabel_score[0],";MAE:",unlabel_score[1],";R^2:",unlabel_score[2])
+***
+Size of labelled dataset: 10.240202275600506 %
+Model performance on unlabelled dataset: RMSE: 0.1420780190073405 ;MAE: 0.10191720724105835 ;R^2: 0.6880685637961039
+***
+```
 
 ### Identification of optimal reaction condition
 For illustration purpose, we take the Dataset A [1] as example to show how to identify optimal reaction condition with active learning:
@@ -183,6 +271,24 @@ Perform most of the same steps as those listed above except sampling strategy us
 
 ```
 update_list = Rank(out_feat_un, index_un, predict_un, out_feat_train,label_train,"balanced",10)
+
+print("Recommended reaction conditions:")
+for reaction in data:
+    if reaction[0] in update_list:
+        print(reaction[2])
+***
+Recommended reaction conditions:
+['ethyl-3-methylisoxazole-5-carboxylate', 't-BuBrettPhos', '2-iodopyridine', 'MTBD']
+['3-phenylisoxazole', 'AdBrettPhos', '1-bromo-4-ethylbenzene', 'P2Et']
+['ethyl-3-methoxyisoxazole-5-carboxylate', 'AdBrettPhos', '2-chloropyridine', 'P2Et']
+['benzo[c]isoxazole', 'AdBrettPhos', '1-ethyl-4-iodobenzene', 'P2Et']
+['ethyl-isoxazole-3-carboxylate', 't-BuXPhos', '1-ethyl-4-iodobenzene', 'P2Et']
+['methyl-5-(furan-2-yl)isoxazole-3-carboxylate', 't-BuBrettPhos', '2-iodopyridine', 'MTBD']
+['3,5-dimethylisoxazole', 't-BuBrettPhos', '2-iodopyridine', 'MTBD']
+['ethyl-5-methylisoxazole-3-carboxylate', 'AdBrettPhos', '2-chloropyridine', 'P2Et']
+['ethyl-3-methylisoxazole-5-carboxylate', 't-BuBrettPhos', '2-bromopyridine', 'MTBD']
+['methyl-5-(furan-2-yl)isoxazole-3-carboxylate', 't-BuBrettPhos', '2-bromopyridine', 'MTBD']
+***
 ```
 5. Retrain the DeepReac model until optimal reaction condition is found
 
@@ -195,6 +301,11 @@ A | DatasetA_DeepReac.pth | [1]
 B | DatasetB_DeepReac.pth | [2]
 C | DatasetC_DeepReac.pth | [3]
 
+They can be loaded with the following codes:
+```
+ckpt = torch.load("models/DatasetA_DeepReac.pth",map_location="cuda")
+model.load_state_dict(ckpt["model_state_dict"])
+```
 
 ## Contacts
 gykxyy@126.com or qiliu@tongji.edu.cn
