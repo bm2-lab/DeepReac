@@ -40,6 +40,8 @@ Since DeepReac+ is a universal framework for quantitative modeling of chemical r
 For illustration purpose, we take the Dataset A [1] as example to show how to build a dataset:
 
 ```
+import pandas as pd
+import torch
 from Data.DatasetA import main_test
 from utils import name2g
 
@@ -80,6 +82,19 @@ for i in index_list:
     label = torch.tensor([y[i]*0.01])
     data_ = (str(i),reactions[i],names[i],label)
     data.append(data_)
+    
+print(data[0])
+***
+('0', [DGLGraph(num_nodes=11, num_edges=24,
+         ndata_schemes={'h': Scheme(shape=(74,), dtype=torch.float32)}
+         edata_schemes={}), DGLGraph(num_nodes=34, num_edges=74,
+         ndata_schemes={'h': Scheme(shape=(74,), dtype=torch.float32)}
+         edata_schemes={}), DGLGraph(num_nodes=11, num_edges=22,
+         ndata_schemes={'h': Scheme(shape=(74,), dtype=torch.float32)}
+         edata_schemes={}), DGLGraph(num_nodes=21, num_edges=40,
+         ndata_schemes={'h': Scheme(shape=(74,), dtype=torch.float32)}
+         edata_schemes={})], ['5-phenylisoxazole', 'XPhos', '1-chloro-4-(trifluoromethyl)benzene', 'P2Et'], tensor([0.1066]))
+***
     
 ```
 
