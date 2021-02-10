@@ -81,10 +81,6 @@ for i in index_list:
     data_ = (str(i),reactions[i],names[i],label)
     data.append(data_)
     
-print(data[0])
-***
-
-***
 ```
 
 ### Prediction of chemical reaction outcomes
