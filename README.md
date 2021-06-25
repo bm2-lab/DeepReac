@@ -49,7 +49,7 @@ from utils import name2g
 plate1 = main_test.plate1
 plate2 = main_test.plate2
 plate3 = main_test.plate3
-unscaled = pd.read_csv('Data/DatasetA/Scaled_dataset.csv')
+unscaled = pd.read_csv('Data/DatasetA/dataset.csv')
 raw = unscaled.values
 y = raw[:,-1]
 path = "Data/DatasetA/sdf/"
