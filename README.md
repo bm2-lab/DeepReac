@@ -97,6 +97,143 @@ print(data[0])
 ***
     
 ```
+### Hyperparameter optimization
+For illustration purpose, we take the Dataset A [1] as example to show how to optimize the hyperparameters of DeepReac model:
+
+```
+import json
+from tqdm import tqdm
+import copy
+import numpy as np
+import torch
+from torch import nn
+from torch.utils.data import DataLoader
+from dgllife.utils import CanonicalAtomFeaturizer
+from utils import load_dataset,collate_molgraphs,Meter,getarrindices,get_split
+from model import DeepReac
+
+def run_a_train_epoch(epoch, model, data_loader, loss_criterion, optimizer, device):
+    model.train()
+    train_meter = Meter()
+    for batch_id, batch_data in enumerate(data_loader):
+        index, bg, labels, masks, conditions = batch_data
+        labels, masks = labels.to(device), masks.to(device)
+        hs = []
+        for bg_ in bg:
+            h_ = bg_.ndata.pop('h')
+            hs.append(h_)
+
+        prediction, out_feats = model(bg,hs,conditions)
+        loss = (loss_criterion(prediction, labels) * (masks != 0).float()).mean()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        train_meter.update(prediction, labels, masks)
+    total_score = np.mean(train_meter.compute_metric("rmse"))
+    return total_score
+
+def run_an_eval_epoch(model, data_loader, device):
+    model.eval()
+    eval_meter = Meter()
+    with torch.no_grad():
+        for batch_id, batch_data in enumerate(data_loader):
+            index, bg, labels, masks, conditions = batch_data
+            labels, masks = labels.to(device), masks.to(device)
+            hs = []
+            for bg_ in bg:
+                h_ = bg_.ndata.pop('h')
+                hs.append(h_)
+
+            prediction, out_feats = model(bg,hs,conditions)
+            eval_meter.update(prediction, labels, masks)
+        total_score = []
+        for metric in ["rmse", "mae", "r2"]:
+            total_score.append(np.mean(eval_meter.compute_metric(metric)))
+    return total_score
+
+dataset = "DatasetA"
+name = "Data/"+dataset+"_CV.json" # five-fold random splitting for the outer loop of nested CV
+with open(name,'r') as f:
+    result = json.load(f)
+split_n = 0 # corresponds to CV-split 1, and so on
+train = result["train"][split_n]
+val = result["val"][split_n]
+
+train_,test = get_split(len(train),5) # five-fold random splitting for the inner loop of nested CV
+scores = []
+
+data, c_num = load_dataset(dataset)
+batch_size =128
+num_epochs = 1000
+lr = 0.001
+weight_decay = 0.0
+parameter = {
+'hidden_feats': [[32,32],[16,16]],
+'num_heads': [[4,4],[2,2]],
+'out_dim': [16,32,128],
+'dropout_2': [0,0.1,0.5],
+}
+# Users can adjust the hyperparameter set to be optimized here.
+# For example, the above codes correspond to two-layer GAT,
+# but users want to see the results of three-layer GAT.
+# The corresponding codes:
+# parameter = {
+# 'hidden_feats': [[32,32,32],[16,16,16]],
+# 'num_heads': [[4,4,4],[2,2,2]],
+# 'out_dim': [16,32,128],
+# 'dropout_2': [0,0.1,0.5],
+# }
+
+param_permutation = [{},]
+for k,v in parameter.items():
+    new_values = len(v)
+    current_exp_len = len(param_permutation)
+    for _ in range(new_values-1):
+        param_permutation.extend(copy.deepcopy(param_permutation[:current_exp_len]))
+    for validx in range(len(v)):
+        for exp in param_permutation[validx*current_exp_len:(validx+1)*current_exp_len]:
+            if k == 'hidden_feats':
+                exp['hidden_feats_0'] = v[validx]
+                exp['hidden_feats_1'] = v[validx]
+            elif k == 'num_heads':
+                exp['num_heads_0'] = v[validx]
+                exp['num_heads_1'] = v[validx]
+            else:
+                exp[k] = v[validx]
+
+for i in range(len(train_)): # inner loop
+    train_idx = getarrindices(train,train_[i])
+    test_idx = getarrindices(train,test[i])
+    train_set = getarrindices(data,train_idx)
+    test_set = getarrindices(data,test_idx)
+
+    train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True, collate_fn=collate_molgraphs)
+    test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True, collate_fn=collate_molgraphs)
+
+    loss_fn = nn.MSELoss(reduction='none')
+    in_feats_dim = CanonicalAtomFeaturizer().feat_size('h')
+    device = "cuda:0" # or "cpu"
+
+    score = []
+    for j in range(len(param_permutation)):
+
+        model = DeepReac(in_feats_dim, len(data[0][1]), c_num, device = device, **param_permutation[j])
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        model.to(device)
+
+        for epoch in tqdm(range(num_epochs)):
+            train_score = run_a_train_epoch(epoch, model, train_loader, loss_fn, optimizer, device)
+        val_score = run_an_eval_epoch(model, test_loader, device)
+
+        score.append([float(val_score[0]),float(val_score[1]),float(val_score[2])])
+
+    scores.append(score)
+
+scores = np.array(scores)
+avg = np.mean(scores,axis=0)
+idx = np.argmin(avg[:,0]) # rmse as metrics
+param_best = param_permutation[idx] # The best hyperparameters on CV-split 1 of Dataset A
+```
 
 ### Prediction of chemical reaction outcomes
 For illustration purpose, we take the Dataset A [1] as example to show how to train a DeepReac model with active learning:
