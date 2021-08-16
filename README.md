@@ -273,9 +273,6 @@ Perform most of the same steps as those listed above except sampling strategy us
 update_list = Rank(out_feat_un, index_un, predict_un, out_feat_train,label_train,"balanced",10)
 
 print("Recommended reaction conditions:")
-# It should be noted that the same product can be obtained by different substrates which only differ in the leaving group. 
-# Hence, substrates here are also defined as reaction conditions in a broad sense and they can be optimized.
-
 for reaction in data:
     if reaction[0] in update_list:
         print(reaction[2])
@@ -292,6 +289,8 @@ Recommended reaction conditions:
 ['ethyl-3-methylisoxazole-5-carboxylate', 't-BuBrettPhos', '2-bromopyridine', 'MTBD']
 ['methyl-5-(furan-2-yl)isoxazole-3-carboxylate', 't-BuBrettPhos', '2-bromopyridine', 'MTBD']
 ***
+# It should be noted that the same product can be obtained by different substrates which only differ in the leaving group. 
+# Hence, substrates here are also defined as reaction conditions in a broad sense and they can be optimized.
 ```
 5. Retrain the DeepReac model until optimal reaction condition is found
 
