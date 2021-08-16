@@ -16,6 +16,25 @@ from scipy import stats
 def getarrindices(arr, indices):
     return [arr[i] for i in indices]
 
+def get_split(length,num):
+    split = []
+    l = [i for i in range(length)]
+    random.shuffle(l)
+    for i in range(num):
+        one_list = l[round(i / num * len(l)):round((i + 1) / num * len(l))]
+        split.append(one_list)
+    train = []
+    test = []
+    for j in range(num):
+        test.append(split[j])
+        train_ = []
+        for k in range(num):
+            if k!=j:
+                train_ += split[k]
+        train.append(train_)
+
+    return train,test
+
 def build_optimizer(args, params):
     filter_fn = filter(lambda p : p.requires_grad, params)
     if args.opt == 'adam':
