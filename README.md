@@ -236,7 +236,7 @@ param_best = param_permutation[idx] # The best hyperparameters on CV-split 1 of 
 ```
 
 ### Prediction of chemical reaction outcomes
-For illustration purpose, we take the Dataset A [1] as example to show how to train a DeepReac model with active learning:
+For illustration purpose, we take the Dataset B [2] as example to show how to train a DeepReac model with active learning:
 
 ```
 import random
@@ -260,7 +260,7 @@ if args.device == "cpu":
 else:
     device = "cuda:"+str(args.device)
 
-data, c_num = load_dataset("DatasetA")
+data, c_num = load_dataset("DatasetB")
 random.shuffle(data)
 labeled = data[:int(args.pre_ratio*len(data))]
 unlabeled = data[int(args.pre_ratio*len(data)):]
@@ -352,8 +352,8 @@ label_ratio = len(labeled)/len(data)
 print("Size of labelled dataset:",100*label_ratio,"%")
 print("Model performance on unlabelled dataset: RMSE:",unlabel_score[0],";MAE:",unlabel_score[1],";R^2:",unlabel_score[2])
 ***
-Size of labelled dataset: 9.987357774968395 %
-Model performance on unlabelled dataset: RMSE: 0.14693266619199769 ;MAE: 0.1064871996641159 ;R^2: 0.6654608167422571
+Size of labelled dataset: 9.98263888888889 %
+Model performance on unlabelled dataset: RMSE: 0.18187356184689038 ;MAE: 0.1355237513780594 ;R^2: 0.4841254137661606
 ***
 ```
 
@@ -394,13 +394,13 @@ label_ratio = len(labeled)/len(data)
 print("Size of labelled dataset:",100*label_ratio,"%")
 print("Model performance on unlabelled dataset: RMSE:",unlabel_score[0],";MAE:",unlabel_score[1],";R^2:",unlabel_score[2])
 ***
-Size of labelled dataset: 10.240202275600506 %
-Model performance on unlabelled dataset: RMSE: 0.1420780190073405 ;MAE: 0.10191720724105835 ;R^2: 0.6880685637961039
+Size of labelled dataset: 10.199652777777777 %
+Model performance on unlabelled dataset: RMSE: 0.17963430405055877 ;MAE: 0.13125237822532654 ;R^2: 0.49230837688682616
 ***
 ```
 
 ### Identification of optimal reaction condition
-For illustration purpose, we take the Dataset A [1] as example to show how to identify optimal reaction condition with active learning:
+For illustration purpose, we take the Dataset B [2] as example to show how to identify optimal reaction condition with active learning:
 
 Perform most of the same steps as those listed above except sampling strategy used in Step 3 and stopping criterion used in Step 5.
 
@@ -415,17 +415,18 @@ for reaction in data:
         print(reaction[2])
 ***
 Recommended reaction conditions:
-['ethyl-3-methylisoxazole-5-carboxylate', 't-BuBrettPhos', '2-iodopyridine', 'MTBD']
-['3-phenylisoxazole', 'AdBrettPhos', '1-bromo-4-ethylbenzene', 'P2Et']
-['ethyl-3-methoxyisoxazole-5-carboxylate', 'AdBrettPhos', '2-chloropyridine', 'P2Et']
-['benzo[c]isoxazole', 'AdBrettPhos', '1-ethyl-4-iodobenzene', 'P2Et']
-['ethyl-isoxazole-3-carboxylate', 't-BuXPhos', '1-ethyl-4-iodobenzene', 'P2Et']
-['methyl-5-(furan-2-yl)isoxazole-3-carboxylate', 't-BuBrettPhos', '2-iodopyridine', 'MTBD']
-['3,5-dimethylisoxazole', 't-BuBrettPhos', '2-iodopyridine', 'MTBD']
-['ethyl-5-methylisoxazole-3-carboxylate', 'AdBrettPhos', '2-chloropyridine', 'P2Et']
-['ethyl-3-methylisoxazole-5-carboxylate', 't-BuBrettPhos', '2-bromopyridine', 'MTBD']
-['methyl-5-(furan-2-yl)isoxazole-3-carboxylate', 't-BuBrettPhos', '2-bromopyridine', 'MTBD']
+['1b', '2b', 'CataCXiumA', 'THF', 'NaOH']
+['1b', '2b', 'XPhos', 'DMF', 'NaOH']
+['1d', '2c', 'P(Cy)3', 'MeOH', 'KOH']
+['1d', '2a', 'SPhos', 'MeCN', 'LiOtBu']
+['1a', '2a', 'P(Cy)3', 'DMF', 'Et3N']
+['1c', '2b', 'CataCXiumA', 'MeCN', 'CsF']
+['1b', '2a', 'P(Ph)3', 'DMF', 'CsF']
+['1d', '2b', 'CataCXiumA', 'THF', 'NaOH']
+['1b', '2a', 'P(Ph)3', 'MeCN', 'CsF']
+['1d', '2b', 'AmPhos', 'THF', 'NaOH']
 ***
+# The first two items, i.e. '1b' and '2b', represent the substrates in Dataset B.
 # It should be noted that the same product can be obtained by different substrates which only differ in the leaving group. 
 # Hence, substrates here are also defined as reaction conditions in a broad sense and they can be optimized.
 ```
