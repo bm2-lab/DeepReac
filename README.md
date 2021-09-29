@@ -426,9 +426,9 @@ Recommended reaction conditions:
 ['1b', '2a', 'P(Ph)3', 'MeCN', 'CsF']
 ['1d', '2b', 'AmPhos', 'THF', 'NaOH']
 ***
-# The first two items, i.e. '1b' and '2b', represent the substrates in Dataset B.
-# It should be noted that the same product can be obtained by different substrates which only differ in the leaving group. 
-# Hence, substrates here are also defined as reaction conditions in a broad sense and they can be optimized.
+# The first two items, i.e. '1b' and '2b', represent the starting materials in Dataset B.
+# It should be noted that the same product can be obtained by different starting materials which only differ in the leaving group. 
+# Hence, starting materials here can also be optimized.
 ```
 5. Retrain the DeepReac model until optimal reaction condition is found
 
